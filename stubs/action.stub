@@ -1,0 +1,13 @@
+<?php
+
+namespace {{ namespace }};
+
+use Holiq\ActionData\Foundation\Action;
+
+readonly class {{ class }} extends Action
+{
+    public function execute()
+    {
+        //
+    }
+}

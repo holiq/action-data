@@ -1,0 +1,12 @@
+<?php
+
+namespace {{ namespace }};
+
+use Holiq\ActionData\Foundation\DataTransferObject;
+
+readonly class {{ class }} extends DataTransferObject
+{
+    final public function __construct(
+        //
+    ) {}
+}

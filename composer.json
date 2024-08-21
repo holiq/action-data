@@ -1,0 +1,63 @@
+{
+  "name": "holiq/action-data",
+  "description": "Laravel Package for generate Actions and DTOs on your projects",
+  "keywords": [
+    "holiq",
+    "action",
+    "datatransferobjects",
+    "dtos",
+    "laravel",
+    "laravelpackage"
+  ],
+  "type": "library",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "Holiq\\ActionData\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Holiq Ibrahim",
+      "email": "holiq.ibrahim376@gmail.com"
+    }
+  ],
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "require": {
+    "php": "^8.2",
+    "illuminate/support": "^11.0",
+    "illuminate/console": "^11.0",
+    "illuminate/filesystem": "^11.0",
+    "illuminate/container": "^11.0",
+    "cuyz/valinor": "^1.0",
+    "spatie/php-cloneable": "^1.0"
+  },
+  "require-dev": {
+    "laravel/pint": "^v1.0",
+    "pestphp/pest": "^2.0",
+    "pestphp/pest-plugin-laravel": "^2.0",
+    "orchestra/testbench": "^9.0",
+    "phpstan/phpstan": "^1.0"
+  },
+  "config": {
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Holiq\\ActionData\\ActionDataServiceProvider"
+      ]
+    }
+  },
+  "scripts": {
+    "test": "vendor/bin/pest"
+  }
+}
