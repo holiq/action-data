@@ -6,7 +6,12 @@ use Holiq\ActionData\Foundation\DataTransferObject;
 
 readonly class {{ class }} extends DataTransferObject
 {
+    /**
+     * Create a new DTO instance
+     */
     final public function __construct(
-        //
+        // TODO: Define your properties here
+        // Example: public string $name,
+        // Example: public string $email,
     ) {}
 }

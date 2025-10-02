@@ -58,6 +58,15 @@
     }
   },
   "scripts": {
-    "test": "vendor/bin/pest"
+    "test": "vendor/bin/pest",
+    "test-coverage": "vendor/bin/pest --coverage",
+    "analyse": "vendor/bin/phpstan analyse",
+    "format": "vendor/bin/pint",
+    "format-check": "vendor/bin/pint --test",
+    "ci": [
+      "@format-check",
+      "@analyse",
+      "@test"
+    ]
   }
 }

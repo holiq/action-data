@@ -6,8 +6,13 @@ use Holiq\ActionData\Foundation\Action;
 
 readonly class {{ class }} extends Action
 {
-    public function execute()
+    /**
+     * Execute the action
+     *
+     * @return mixed
+     */
+    public function execute(): mixed
     {
-        //
+        // TODO: Implement your business logic here
     }
 }
