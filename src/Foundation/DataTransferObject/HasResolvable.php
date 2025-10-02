@@ -4,9 +4,9 @@ namespace Holiq\ActionData\Foundation\DataTransferObject;
 
 use CuyZ\Valinor\Mapper\MappingError;
 use CuyZ\Valinor\MapperBuilder;
+use Holiq\ActionData\Exceptions\InvalidArgumentException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 trait HasResolvable
@@ -14,14 +14,12 @@ trait HasResolvable
     /**
      * Resolve unstructured data from polymorphism types
      *
-     * @template TKey of array-key
-     * @template TValue
-     *
-     * @param  FormRequest | Model | array<TKey, TValue>  $abstract
+     * @param  mixed  $abstract  The data source (FormRequest, Model, or array)
      *
      * @throws MappingError
+     * @throws InvalidArgumentException
      */
-    public static function resolveFrom(FormRequest | Model | array $abstract): static
+    public static function resolveFrom(mixed $abstract): static
     {
         if ($abstract instanceof FormRequest) {
             return static::resolveFromFormRequest(request: $abstract);
@@ -31,11 +29,16 @@ trait HasResolvable
             return static::resolveFromModel(model: $abstract);
         }
 
-        if (Arr::accessible($abstract)) {
-            return static::resolveFromArray(data: $abstract);
+        if (is_array($abstract)) {
+            /** @var array<array-key, mixed> $arrayData */
+            $arrayData = $abstract;
+
+            return static::resolve(data: $arrayData);
         }
 
-        return throw new \RuntimeException;
+        throw new InvalidArgumentException(
+            'Unsupported data type for DTO resolution. Expected FormRequest, Model, or array, got: ' . get_debug_type($abstract)
+        );
     }
 
     /**
@@ -77,18 +80,28 @@ trait HasResolvable
 
     /**
      * Resolve unstructured data from FormRequest
+     *
+     * @throws MappingError
      */
     public static function resolveFromFormRequest(FormRequest $request): static
     {
-        return throw new \RuntimeException;
+        /** @var array<array-key, mixed> $validatedData */
+        $validatedData = $request->validated();
+
+        return static::resolve($validatedData);
     }
 
     /**
      * Resolve unstructured data from Model
+     *
+     * @throws MappingError
      */
     public static function resolveFromModel(Model $model): static
     {
-        return throw new \RuntimeException;
+        /** @var array<array-key, mixed> $modelData */
+        $modelData = $model->toArray();
+
+        return static::resolve($modelData);
     }
 
     /**

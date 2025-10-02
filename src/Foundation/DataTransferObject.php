@@ -15,9 +15,9 @@ abstract readonly class DataTransferObject
     use Tappable;
 
     /**
-     * Prevent properties to included on create
+     * Properties to exclude when creating records
      *
-     * @return array<empty>
+     * @return array<string>
      */
     protected function toExcludedPropertiesOnCreate(): array
     {
@@ -25,9 +25,9 @@ abstract readonly class DataTransferObject
     }
 
     /**
-     * Prevent properties to included on create
+     * Properties to exclude when updating records
      *
-     * @return array<empty>
+     * @return array<string>
      */
     protected function toExcludedPropertiesOnUpdate(): array
     {
@@ -35,8 +35,10 @@ abstract readonly class DataTransferObject
     }
 
     /**
-     * The method that will resolve the inheritance properties
-     * naming to snake case that can fit with database column naming
+     * Convert the DTO to an array with snake_case keys
+     *
+     * This method converts all property names from camelCase to snake_case
+     * to match Laravel's database column naming conventions.
      *
      * @return array<array-key, mixed>
      */
@@ -57,7 +59,39 @@ abstract readonly class DataTransferObject
     }
 
     /**
-     * Resolve result array-key of toArray method from behaviour
+     * Convert the DTO to an array for creating records
+     *
+     * This method excludes properties defined in toExcludedPropertiesOnCreate()
+     *
+     * @return array<array-key, mixed>
+     */
+    public function toArrayForCreate(): array
+    {
+        $excluded = $this->toExcludedPropertiesOnCreate();
+
+        return Collection::make($this->toArray())
+            ->except($excluded)
+            ->toArray();
+    }
+
+    /**
+     * Convert the DTO to an array for updating records
+     *
+     * This method excludes properties defined in toExcludedPropertiesOnUpdate()
+     *
+     * @return array<array-key, mixed>
+     */
+    public function toArrayForUpdate(): array
+    {
+        $excluded = $this->toExcludedPropertiesOnUpdate();
+
+        return Collection::make($this->toArray())
+            ->except($excluded)
+            ->toArray();
+    }
+
+    /**
+     * Resolve the array key from property name to database column format
      */
     protected function resolveArrayKey(string $key): string
     {
@@ -65,10 +99,50 @@ abstract readonly class DataTransferObject
     }
 
     /**
-     * Die and dump the current Data.
+     * Check if the DTO has a specific property
+     */
+    public function has(string $property): bool
+    {
+        return property_exists($this, $property);
+    }
+
+    /**
+     * Get a specific property value
+     */
+    public function get(string $property, mixed $default = null): mixed
+    {
+        return $this->has($property) ? $this->{$property} : $default;
+    }
+
+    /**
+     * Convert DTO to JSON
+     */
+    public function toJson(int $options = 0): string
+    {
+        $json = json_encode($this->toArray(), $options);
+
+        if ($json === false) {
+            throw new \JsonException('Failed to encode DTO to JSON');
+        }
+
+        return $json;
+    }
+
+    /**
+     * Die and dump the current DTO data for debugging
      */
     public function dd(): never
     {
         dd($this);
+    }
+
+    /**
+     * Dump the current DTO data for debugging
+     */
+    public function dump(): static
+    {
+        dump($this);
+
+        return $this;
     }
 }

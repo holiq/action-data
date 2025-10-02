@@ -5,17 +5,21 @@ namespace Holiq\ActionData\Foundation;
 abstract readonly class Action
 {
     /**
-     * Resolve an action class
+     * Resolve an action instance from Laravel's container
      *
-     * @param  array<array-key, mixed>  $parameters
+     * This method uses Laravel's dependency injection container to create
+     * an instance of the action, allowing for automatic injection of dependencies.
+     *
+     * @param  array<array-key, mixed>  $parameters  Additional parameters for dependency injection
+     * @return static The resolved action instance
      */
     public static function resolve(array $parameters = []): static
     {
         /**
-         * @var static $static
+         * @var static $instance
          */
-        $static = resolve(name: static::class, parameters: $parameters);
+        $instance = resolve(name: static::class, parameters: $parameters);
 
-        return $static;
+        return $instance;
     }
 }
