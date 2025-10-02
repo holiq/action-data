@@ -96,7 +96,7 @@ use Holiq\ActionData\Foundation\Action;
 
 readonly class StoreUserAction extends Action
 {
-    public function execute()
+    public function execute(): mixed
     {
         // Your business logic here
     }
