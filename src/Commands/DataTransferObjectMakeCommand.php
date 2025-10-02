@@ -21,12 +21,12 @@ class DataTransferObjectMakeCommand extends Command implements Console
 
     public function beforeCreate(): void
     {
-        $this->info(string: 'Generating action file to your project');
+        $this->info(string: 'Generating DTO file to your project');
     }
 
     public function afterCreate(): void
     {
-        $this->info(string: 'Successfully generate action file');
+        $this->info(string: 'Successfully generated DTO file');
     }
 
     public function getNamespace(): string

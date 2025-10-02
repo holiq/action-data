@@ -26,7 +26,7 @@ class ActionMakeCommand extends Command implements Console
 
     public function afterCreate(): void
     {
-        $this->info(string: 'Successfully generate action file');
+        $this->info(string: 'Successfully generated action file');
     }
 
     public function getNamespace(): string
