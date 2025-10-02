@@ -121,7 +121,7 @@ it('can convert to JSON', function () {
         email: 'john@example.com'
     );
 
-    $json = $data->toJSON();
+    $json = $data->toJson();
     $decoded = json_decode($json, true);
 
     expect($decoded)->toBe([
