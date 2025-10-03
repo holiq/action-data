@@ -11,7 +11,7 @@ readonly class {{ class }} extends DataTransferObject
      */
     final public function __construct(
         // TODO: Define your properties here
-        // Example: public string $name,
-        // Example: public string $email,
+        // Example: #[Required, Length(min: 1, max: 255)] public string $name,
+        // Example: #[Required, Email] public string $email,
     ) {}
 }
