@@ -12,10 +12,8 @@ readonly class TestAction extends Action
     ) {
     }
 
-    public function execute(mixed ...$arguments): string
+    public function execute(string $input = ''): string
     {
-        $input = $arguments[0] ?? '';
-
         return $this->message . ' - ' . $input;
     }
 }

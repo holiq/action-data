@@ -2,6 +2,7 @@
 
 namespace Holiq\ActionData\Foundation;
 
+use Holiq\ActionData\Contracts\Validator;
 use Holiq\ActionData\Foundation\DataTransferObject\HasResolvable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -162,7 +163,7 @@ abstract readonly class DataTransferObject
                 $attributeInstance = $attribute->newInstance();
 
                 // Check if it's a validation attribute
-                if (method_exists($attributeInstance, 'validate') && method_exists($attributeInstance, 'getErrorMessage')) {
+                if ($attributeInstance instanceof Validator) {
                     if (! $attributeInstance->validate($value, $propertyName)) {
                         $errors[] = $attributeInstance->getErrorMessage($propertyName);
                     }
