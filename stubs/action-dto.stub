@@ -1,0 +1,19 @@
+<?php
+
+namespace {{ namespace }};
+
+use Holiq\ActionData\Foundation\Action;
+use {{ importClass }};
+
+readonly class {{ class }} extends Action
+{
+    /**
+     * Execute the action
+     *
+     * @return mixed
+     */
+    public function execute({{ classBasename }} $data): mixed
+    {
+        // TODO: Implement your business logic here
+    }
+}

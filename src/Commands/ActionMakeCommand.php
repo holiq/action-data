@@ -10,12 +10,13 @@ use Holiq\ActionData\DataTransferObjects\NamespaceData;
 use Holiq\ActionData\DataTransferObjects\PlaceholderData;
 use Holiq\ActionData\Support\Source;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Artisan;
 
 class ActionMakeCommand extends Command implements Console
 {
     use HasArguments, HasOptions, InteractsWithConsole;
 
-    protected $signature = 'make:action {name} {--force}';
+    protected $signature = 'make:action {name} {--with-dto=} {--force}';
 
     protected $description = 'Create a new action';
 
@@ -26,6 +27,12 @@ class ActionMakeCommand extends Command implements Console
 
     public function afterCreate(): void
     {
+        if ($this->resolveWithDtoOption()) {
+            Artisan::call(command: 'make:dto', parameters: [
+                'name' => $this->resolveWithDtoOption(),
+                '--force' => $this->resolveForceOption(),
+            ]);
+        }
         $this->info(string: 'Successfully generated action file');
     }
 
@@ -41,7 +48,9 @@ class ActionMakeCommand extends Command implements Console
 
     public function getStubPath(): string
     {
-        return Source::resolveStubForPath(name: 'action');
+        $stub = $this->resolveWithDtoOption() ? 'action-dto' : 'action';
+
+        return Source::resolveStubForPath(name: $stub);
     }
 
     public function resolvePlaceholders(): PlaceholderData
@@ -49,6 +58,23 @@ class ActionMakeCommand extends Command implements Console
         return new PlaceholderData(
             namespace: $this->getNamespace(),
             class: $this->getClassName(),
+            importClass: $this->resolveWithimportClass(),
+            classBasename: basename((string) $this->resolveWithDtoOption()),
         );
+    }
+
+    public function resolveWithimportClass(): ?string
+    {
+        if ($this->resolveWithDtoOption()) {
+            $namespace = Source::resolveNamespace(
+                data: new NamespaceData(
+                    structures: Source::resolveDataTransferObjectPath(),
+                    nameArgument: (string) $this->resolveWithDtoOption(),
+                    endsWith: (string) $this->resolveWithDtoOption(),
+                )
+            );
+        }
+
+        return $namespace ?? null;
     }
 }

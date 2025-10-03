@@ -10,7 +10,8 @@ readonly class PlaceholderData extends DataTransferObject
     final public function __construct(
         public ?string $namespace = null,
         public ?string $class = null,
-        public ?string $subject = null,
+        public ?string $importClass = null,
+        public ?string $classBasename = null,
     ) {
     }
 
