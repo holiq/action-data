@@ -129,6 +129,69 @@ abstract readonly class DataTransferObject
     }
 
     /**
+     * Validate the DTO using a custom validation callback
+     *
+     * @param  callable(static): bool  $validator
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function validate(callable $validator, string $message = 'DTO validation failed'): static
+    {
+        if (! $validator($this)) {
+            throw new \InvalidArgumentException($message);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Validate the DTO using attributes on properties
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function validateAttributes(): static
+    {
+        $reflection = new \ReflectionClass($this);
+        $errors = [];
+
+        foreach ($reflection->getProperties() as $property) {
+            $propertyName = $property->getName();
+            $value = $this->getPropertyValue($property);
+
+            foreach ($property->getAttributes() as $attribute) {
+                $attributeInstance = $attribute->newInstance();
+
+                // Check if it's a validation attribute
+                if (method_exists($attributeInstance, 'validate') && method_exists($attributeInstance, 'getErrorMessage')) {
+                    if (! $attributeInstance->validate($value, $propertyName)) {
+                        $errors[] = $attributeInstance->getErrorMessage($propertyName);
+                    }
+                }
+            }
+        }
+
+        if (! empty($errors)) {
+            throw new \InvalidArgumentException('Validation failed: ' . implode(', ', $errors));
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get property value safely
+     */
+    private function getPropertyValue(\ReflectionProperty $property): mixed
+    {
+        if (! $property->isInitialized($this)) {
+            return null;
+        }
+
+        $property->setAccessible(true);
+
+        return $property->getValue($this);
+    }
+
+    /**
      * Die and dump the current DTO data for debugging
      */
     public function dd(): never

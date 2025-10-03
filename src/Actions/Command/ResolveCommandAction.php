@@ -24,7 +24,7 @@ readonly class ResolveCommandAction extends Action
      * @throws FileAlreadyExistException
      * @throws FileNotFoundException
      */
-    public function execute(): void
+    public function execute(): bool
     {
         FilePresentAction::resolve()
             ->execute(
@@ -36,6 +36,8 @@ readonly class ResolveCommandAction extends Action
             );
 
         CopyStubAction::resolve()->execute(data: $this->getDefaultCopyStubData());
+
+        return true;
     }
 
     protected function getDefaultCopyStubData(): CopyStubData
