@@ -48,15 +48,17 @@ A Laravel package that provides an elegant way to generate and use Actions and D
 
 You can install the package via Composer:
 
-````bash
+```bash
 composer require holiq/action-data
+```
+
 The package will automatically register its service provider.
 
 Optionally, you can publish the configuration file:
 
 ```bash
 php artisan vendor:publish --provider="Holiq\ActionData\ActionDataServiceProvider" --tag="config"
-````
+```
 
 After publishing, you can customize the paths in `config/action-data.php`:
 
