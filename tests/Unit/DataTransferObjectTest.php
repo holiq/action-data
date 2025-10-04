@@ -26,6 +26,20 @@ readonly class TestUserData extends DataTransferObject
     }
 }
 
+readonly class PersonDto extends DataTransferObject
+{
+    public function __construct(
+        public readonly string $firstName,
+        public readonly string $lastName,
+        public readonly int $age,
+        /** @var string[] */
+        public readonly array $hobbies,
+        /** @var array<string, string|int|float> */
+        public readonly array $address,
+    ) {
+    }
+}
+
 it('can resolve DTO from array', function () {
     $data = TestUserData::resolve([
         'first_name' => 'John',
@@ -127,6 +141,23 @@ it('can convert to JSON', function () {
     expect($decoded)->toBe([
         'first_name' => 'John',
         'last_name' => 'Doe',
+        'email' => 'john@example.com',
+        'password' => null,
+    ]);
+});
+
+it('can convert to camelCase array', function () {
+    $data = new TestUserData(
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com'
+    );
+
+    $camelCase = $data->toCamelCase();
+
+    expect($camelCase)->toBe([
+        'firstName' => 'John',
+        'lastName' => 'Doe',
         'email' => 'john@example.com',
         'password' => null,
     ]);

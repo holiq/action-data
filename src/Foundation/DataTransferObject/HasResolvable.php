@@ -53,12 +53,46 @@ trait HasResolvable
      */
     public static function resolve(array $data): static
     {
+        $data = static::applyTransforms($data);
+
         /** @var static $instance */
         $instance = (new MapperBuilder())
             ->mapper()
             ->map(signature: static::class, source: static::resolveTheArrayKeyForm(data: $data));
 
         return $instance;
+    }
+
+    /**
+     * Apply data transformations
+     *
+     * @template TKey of array-key
+     * @template TValue
+     *
+     * @param  array<TKey, TValue>  $data
+     * @return array<TKey, TValue>
+     */
+    protected static function applyTransforms(array $data): array
+    {
+        $transforms = static::transforms();
+
+        foreach ($transforms as $key => $transform) {
+            if (array_key_exists($key, $data)) {
+                $data[$key] = $transform($data[$key]);
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Define data transformations
+     *
+     * @return array<string, callable>
+     */
+    protected static function transforms(): array
+    {
+        return [];
     }
 
     /**
