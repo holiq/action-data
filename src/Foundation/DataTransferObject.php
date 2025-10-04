@@ -130,6 +130,63 @@ abstract readonly class DataTransferObject
     }
 
     /**
+     * Convert DTO to camelCase array
+     *
+     * @return array<string, mixed>
+     */
+    public function toCamelCase(): array
+    {
+        return $this->transformKeys(fn (string $key) => Str::camel($key));
+    }
+
+    /**
+     * Transform array keys using a callback
+     *
+     * @param  callable(string): string  $transformer
+     * @return array<string, mixed>
+     */
+    protected function transformKeys(callable $transformer): array
+    {
+        $result = [];
+
+        foreach ($this->toArray() as $key => $value) {
+            $newKey = $transformer((string) $key);
+
+            if (is_array($value)) {
+                $result[$newKey] = $this->transformArrayKeys($value, $transformer);
+            } else {
+                $result[$newKey] = $value;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Recursively transform array keys
+     *
+     * @param  array<mixed, mixed>  $array
+     * @param  callable(string): string  $transformer
+     * @return array<int|string, mixed>
+     */
+    protected function transformArrayKeys(array $array, callable $transformer): array
+    {
+        $result = [];
+
+        foreach ($array as $key => $value) {
+            $newKey = is_string($key) ? $transformer($key) : $key;
+
+            if (is_array($value)) {
+                $result[$newKey] = $this->transformArrayKeys($value, $transformer);
+            } else {
+                $result[$newKey] = $value;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * Validate the DTO using a custom validation callback
      *
      * @param  callable(static): bool  $validator

@@ -34,15 +34,14 @@ class Source
      */
     public static function resolveNamespace(NamespaceData $data): string
     {
-        /** @var string $result */
-        $result = Str::replace(
-            search: '/',
-            replace: '\\',
-            subject: static::resolveNamespaceDir(
-                data: $data,
-                namespace: Str::ucfirst($data->structures)
-            ),
+        $namespace = static::resolveNamespaceDir(
+            data: $data,
+            namespace: Str::ucfirst($data->structures)
         );
+        /** @var string $result */
+        $result = Str::of($namespace)
+            ->finish(cap: $data->endsWith ? '/' . basename($data->endsWith) : '')
+            ->replace(search: '/', replace: '\\');
 
         return $result;
     }

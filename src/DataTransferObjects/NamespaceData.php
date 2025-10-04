@@ -9,6 +9,7 @@ readonly class NamespaceData extends DataTransferObject
     public function __construct(
         public string $structures,
         public string $nameArgument,
+        public ?string $endsWith = null,
     ) {
     }
 }
