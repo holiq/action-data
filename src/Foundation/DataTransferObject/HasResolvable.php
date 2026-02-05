@@ -3,7 +3,7 @@
 namespace Holiq\ActionData\Foundation\DataTransferObject;
 
 use CuyZ\Valinor\Mapper\MappingError;
-use CuyZ\Valinor\MapperBuilder;
+use CuyZ\Valinor\Mapper\TreeMapper;
 use Holiq\ActionData\Exceptions\InvalidArgumentException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Http\FormRequest;
@@ -37,7 +37,7 @@ trait HasResolvable
         }
 
         throw new InvalidArgumentException(
-            'Unsupported data type for DTO resolution. Expected FormRequest, Model, or array, got: ' . get_debug_type($abstract)
+            'Unsupported data type for DTO resolution. Expected FormRequest, Model, or array, got: ' . get_debug_type($abstract),
         );
     }
 
@@ -56,11 +56,18 @@ trait HasResolvable
         $data = static::applyTransforms($data);
 
         /** @var static $instance */
-        $instance = (new MapperBuilder())
-            ->mapper()
+        $instance = static::mapper()
             ->map(signature: static::class, source: static::resolveTheArrayKeyForm(data: $data));
 
         return $instance;
+    }
+
+    /**
+     * Get the mapper instance
+     */
+    protected static function mapper(): TreeMapper
+    {
+        return MapperRegistry::getMapper();
     }
 
     /**
@@ -77,8 +84,25 @@ trait HasResolvable
         $transforms = static::transforms();
 
         foreach ($transforms as $key => $transform) {
+            // Try exact key match first
             if (array_key_exists($key, $data)) {
                 $data[$key] = $transform($data[$key]);
+
+                continue;
+            }
+
+            // Try snake_case version of the key (for camelCase transform keys)
+            $snakeKey = Str::snake($key);
+            if ($snakeKey !== $key && array_key_exists($snakeKey, $data)) {
+                $data[$snakeKey] = $transform($data[$snakeKey]);
+
+                continue;
+            }
+
+            // Try camelCase version of the key (for snake_case transform keys)
+            $camelKey = Str::camel($key);
+            if ($camelKey !== $key && array_key_exists($camelKey, $data)) {
+                $data[$camelKey] = $transform($data[$camelKey]);
             }
         }
 

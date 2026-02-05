@@ -116,11 +116,29 @@ abstract readonly class DataTransferObject
     }
 
     /**
-     * Convert DTO to JSON
+     * Convert DTO to snake_case JSON
+     *
+     * @throws \JsonException
      */
     public function toJson(int $options = 0): string
     {
         $json = json_encode($this->toArray(), $options);
+
+        if ($json === false) {
+            throw new \JsonException('Failed to encode DTO to JSON');
+        }
+
+        return $json;
+    }
+
+    /**
+     * Convert DTO to camelCase JSON
+     *
+     * @throws \JsonException
+     */
+    public function toCamelJson(int $options = 0): string
+    {
+        $json = json_encode($this->toCamelCase(), $options);
 
         if ($json === false) {
             throw new \JsonException('Failed to encode DTO to JSON');
@@ -243,8 +261,6 @@ abstract readonly class DataTransferObject
         if (! $property->isInitialized($this)) {
             return null;
         }
-
-        $property->setAccessible(true);
 
         return $property->getValue($this);
     }

@@ -550,6 +550,9 @@ readonly class CreateUserData extends DataTransferObject
 
     /**
      * Apply data transformations
+     *
+     * Note: Transform keys support both camelCase and snake_case.
+     * Use camelCase (firstName) or snake_case (first_name) - both work!
      */
     protected static function transforms(): array
     {

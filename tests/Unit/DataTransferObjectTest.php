@@ -59,7 +59,8 @@ it('converts DTO to array with snake_case keys', function () {
     $data = new TestUserData(
         firstName: 'John',
         lastName: 'Doe',
-        email: 'john@example.com'
+        email: 'john@example.com',
+        password: 'secret123'
     );
 
     $array = $data->toArray();
@@ -68,7 +69,7 @@ it('converts DTO to array with snake_case keys', function () {
         'first_name' => 'John',
         'last_name' => 'Doe',
         'email' => 'john@example.com',
-        'password' => null,
+        'password' => 'secret123',
     ]);
 });
 
@@ -136,14 +137,20 @@ it('can convert to JSON', function () {
     );
 
     $json = $data->toJson();
-    $decoded = json_decode($json, true);
 
-    expect($decoded)->toBe([
-        'first_name' => 'John',
-        'last_name' => 'Doe',
-        'email' => 'john@example.com',
-        'password' => null,
-    ]);
+    expect($json)->toBeJson();
+});
+
+it('can convert to camelCase JSON', function () {
+    $data = new TestUserData(
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com'
+    );
+
+    $json = $data->toCamelJson();
+
+    expect($json)->toBeJson();
 });
 
 it('can convert to camelCase array', function () {

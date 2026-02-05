@@ -23,7 +23,7 @@ readonly class FilePresentAction extends Action
         }
 
         if ($filesystem->exists(path: $path)) {
-            return throw new FileAlreadyExistException($data->fileName);
+            throw new FileAlreadyExistException($data->fileName);
         }
 
         return false;
