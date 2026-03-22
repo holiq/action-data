@@ -13,5 +13,68 @@ readonly class {{ class }} extends DataTransferObject
         // TODO: Define your properties here
         // Example: #[Required, Length(min: 1, max: 255)] public string $name,
         // Example: #[Required, Email] public string $email,
+        // Example: public ?string $avatar = null,
     ) {}
+
+    // -------------------------------------------------------------------------
+    // Optional: exclude properties from toArrayForCreate() / toArrayForUpdate()
+    // -------------------------------------------------------------------------
+    //
+    // protected function toExcludedPropertiesOnCreate(): array
+    // {
+    //     return ['id', 'updated_at'];
+    // }
+    //
+    // protected function toExcludedPropertiesOnUpdate(): array
+    // {
+    //     return ['id', 'created_at'];
+    // }
+
+    // -------------------------------------------------------------------------
+    // Optional: pre-process incoming data before mapping
+    // -------------------------------------------------------------------------
+    //
+    // protected static function transforms(): array
+    // {
+    //     return [
+    //         'email' => fn ($value) => strtolower(trim($value)),
+    //         'name'  => fn ($value) => trim($value),
+    //     ];
+    // }
+
+    // -------------------------------------------------------------------------
+    // Usage examples
+    // -------------------------------------------------------------------------
+    //
+    // Resolve from various sources:
+    //   $dto = {{ class }}::resolve(['first_name' => 'John', 'email' => 'john@example.com']);
+    //   $dto = {{ class }}::resolveFrom($request);   // FormRequest
+    //   $dto = {{ class }}::resolveFrom($model);     // Eloquent Model
+    //   $dto = {{ class }}::resolveFrom($array);     // plain array
+    //
+    // Immutable overrides — with() uses named arguments (IDE autocomplete friendly):
+    //   $updated = $dto->with(email: 'new@example.com');
+    //   $updated = $dto->with(name: 'Jane', email: 'jane@example.com');
+    //
+    // withArray() accepts snake_case or camelCase array keys:
+    //   $updated = $dto->withArray(['first_name' => 'Jane', 'email' => 'jane@example.com']);
+    //   $updated = $dto->withArray(['firstName' => 'Jane']);
+    //
+    // without() sets nullable properties to null:
+    //   $cleared = $dto->without('avatar');
+    //   $cleared = $dto->without('avatar', 'password');
+    //
+    // All three methods are chainable with each other:
+    //   $result = $dto
+    //       ->with(name: 'Jane')
+    //       ->withArray(['email' => 'jane@example.com'])
+    //       ->without('avatar');
+    //
+    // Output formats:
+    //   $dto->toArray();           // snake_case keys  → for database
+    //   $dto->toArrayForCreate();  // excludes toExcludedPropertiesOnCreate()
+    //   $dto->toArrayForUpdate();  // excludes toExcludedPropertiesOnUpdate()
+    //   $dto->toCamelCase();       // camelCase keys   → for API responses
+    //   $dto->toJson();            // JSON snake_case
+    //   $dto->toCamelJson();       // JSON camelCase
 }

@@ -28,7 +28,7 @@ A Laravel package that provides an elegant way to generate and use Actions and D
 ## Features
 
 - 🚀 **Simple Command Generation**: Generate Actions and DTOs with simple Artisan commands
-- 🔒 **Type Safety**: Built with PHP 8.2+ readonly classes for immutable data structures
+- 🔒 **Type Safety**: Built with PHP 8.3+ readonly classes for immutable data structures
 - 🏗️ **Clean Architecture**: Promotes separation of concerns and clean code practices
 - 🔄 **Automatic Data Mapping**: Seamless conversion between arrays, Form Requests, and Models
 - ✅ **Attribute-Based Validation**: Use PHP attributes for declarative validation rules
@@ -41,8 +41,8 @@ A Laravel package that provides an elegant way to generate and use Actions and D
 
 ## Requirements
 
-- PHP 8.2 or higher
-- Laravel 11.0 or higher
+- PHP 8.3 or higher
+- Laravel 12.0 or 13.0
 
 ## Installation
 
@@ -326,14 +326,10 @@ readonly class CreateUserData extends DataTransferObject
 }
 
 // Validate using attributes
-try {
-    $user = CreateUserData::resolve($data);
-    $user->validateAttributes();
-    // DTO is valid
-} catch (\InvalidArgumentException $e) {
-    // Handle validation errors
-    echo $e->getMessage();
-}
+$user = CreateUserData::resolve($data)->validateAttributes();
+
+// If invalid, validateAttributes() throws Illuminate\Validation\ValidationException
+// with Laravel-standard per-field errors.
 ```
 
 **Available validation attributes:**
@@ -364,6 +360,29 @@ $user
     ->validateAttributes(); // Combine with attribute validation
 ```
 
+#### Custom Validation Attributes
+
+You can create your own PHP attributes by implementing `Holiq\ActionData\Contracts\Validator`:
+
+```php
+use Attribute;
+use Holiq\ActionData\Contracts\Validator;
+
+#[Attribute(Attribute::TARGET_PROPERTY)]
+class Positive implements Validator
+{
+    public function validate(mixed $value, string $property): bool
+    {
+        return is_numeric($value) && $value > 0;
+    }
+
+    public function getErrorMessage(string $property): string
+    {
+        return "'{$property}' must be a positive number.";
+    }
+}
+```
+
 ### Nested DTOs
 
 Laravel Action Data automatically resolves nested DTOs and arrays of DTOs:
@@ -389,7 +408,7 @@ readonly class UserData extends DataTransferObject
     ) {}
 }
 
-// Automatically resolves nested structure
+// Option 1: Using resolver (auto maps nested array → DTO)
 $user = UserData::resolve([
     'name' => 'John Doe',
     'email' => 'john@example.com',
@@ -399,6 +418,17 @@ $user = UserData::resolve([
         'country' => 'USA',
     ],
 ]);
+
+// Option 2: Manual instantiation (must pass AddressData object)
+$user = new UserData(
+    name: 'John Doe',
+    email: 'john@example.com',
+    address: new AddressData(
+        street: '123 Main St',
+        city: 'Anytown',
+        country: 'USA',
+    ),
+);
 
 // Access nested data
 echo $user->address->street; // "123 Main St"
@@ -624,27 +654,23 @@ class UserController extends Controller
 {
     public function store(CreateUserRequest $request): JsonResponse
     {
-        try {
-            // Resolve and validate DTO
-            $userData = CreateUserData::resolve($request->validated())
-                ->validateAttributes();
+        // Resolve and validate DTO
+        $userData = CreateUserData::resolve($request->validated())
+            ->validateAttributes();
 
-            // Execute action with validated DTO
-            $user = CreateUserAction::resolve()->execute($userData);
+        // Execute action with validated DTO
+        $user = CreateUserAction::resolve()->execute($userData);
 
-            return response()->json([
-                'message' => 'User created successfully',
-                'data' => $user
-            ], 201);
-        } catch (\InvalidArgumentException $e) {
-            return response()->json([
-                'message' => 'Validation failed',
-                'errors' => $e->getMessage()
-            ], 422);
-        }
+        return response()->json([
+            'message' => 'User created successfully',
+            'data' => $user
+        ], 201);
     }
 }
 ```
+
+When validation fails, Laravel will automatically convert the
+`ValidationException` to a standard `422 Unprocessable Entity` response.
 
 #### Nested DTOs Example: Order Management
 
@@ -783,6 +809,7 @@ Creates a DTO instance from various data sources.
 **`toArrayForCreate(): array`** - Excludes properties from `toExcludedPropertiesOnCreate()`  
 **`toArrayForUpdate(): array`** - Excludes properties from `toExcludedPropertiesOnUpdate()`  
 **`toJson(int $options = 0): string`** - Converts to JSON string
+**`toCamelJson(int $options = 0): string`** - Converts to camelCase JSON string
 
 #### Validation
 
@@ -796,6 +823,12 @@ Validates using PHP attributes.
 
 **`has(string $property): bool`** - Checks if property exists  
 **`get(string $property, mixed $default = null): mixed`** - Gets property value
+
+#### Immutable Update Helpers
+
+**`with(mixed ...$values): static`** - Returns a cloned DTO with named-argument overrides  
+**`withArray(array $overrides): static`** - Returns a cloned DTO with snake_case/camelCase key overrides  
+**`without(string ...$properties): static`** - Returns a cloned DTO with nullable properties set to null
 
 #### Utility Methods
 
