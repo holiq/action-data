@@ -10,7 +10,7 @@ use Illuminate\Filesystem\Filesystem;
 readonly class CopyStubAction extends Action
 {
     /**
-     * Copy Stub to Diamond Infrastructure
+     * Copy stub file to the target path and replace placeholders.
      *
      *
      * @throws FileNotFoundException
@@ -23,12 +23,11 @@ readonly class CopyStubAction extends Action
 
         $filesystem->ensureDirectoryExists(path: $data->targetPath);
 
-        $filesystem->copy(
-            path: $data->stubPath,
-            target: $absolutePath,
-        );
+        $filesystem->copy(path: $data->stubPath, target: $absolutePath);
 
-        ReplacePlaceholderAction::resolve()
-            ->execute($absolutePath, $data->placeholders);
+        ReplacePlaceholderAction::resolve()->execute(
+            filePath: $absolutePath,
+            placeholders: $data->placeholders,
+        );
     }
 }

@@ -72,7 +72,7 @@ it(description: 'can force generate exists Data Transfer Object class')
     })
     ->group(groups: 'commands');
 
-it(description: 'cannot generate the Action, if the Data Transfer Object already exists')
+it(description: 'cannot generate the Data Transfer Object, if the Data Transfer Object already exists')
     ->defer(function () {
         $fileName = '/StoreUserData.php';
 

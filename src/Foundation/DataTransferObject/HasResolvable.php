@@ -5,6 +5,7 @@ namespace Holiq\ActionData\Foundation\DataTransferObject;
 use CuyZ\Valinor\Mapper\MappingError;
 use CuyZ\Valinor\Mapper\TreeMapper;
 use Holiq\ActionData\Exceptions\InvalidArgumentException;
+use Holiq\ActionData\Exceptions\MappingException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
@@ -12,15 +13,28 @@ use Illuminate\Support\Str;
 trait HasResolvable
 {
     /**
-     * Resolve unstructured data from polymorphism types
+     * Resolve unstructured data from polymorphism types.
+     *
+     * Accepts a {@see FormRequest}, an Eloquent {@see Model}, or an `array`.
+     * Passing `null` or any other type will throw an {@see InvalidArgumentException}
+     * with a clear, descriptive message.
      *
      * @param  mixed  $abstract  The data source (FormRequest, Model, or array)
      *
-     * @throws MappingError
+     * @throws MappingException
      * @throws InvalidArgumentException
      */
     public static function resolveFrom(mixed $abstract): static
     {
+        if ($abstract === null) {
+            throw new InvalidArgumentException(
+                sprintf(
+                    'Cannot resolve %s from null. Expected a FormRequest, Model, or array.',
+                    static::class,
+                ),
+            );
+        }
+
         if ($abstract instanceof FormRequest) {
             return static::resolveFromFormRequest(request: $abstract);
         }
@@ -37,29 +51,37 @@ trait HasResolvable
         }
 
         throw new InvalidArgumentException(
-            'Unsupported data type for DTO resolution. Expected FormRequest, Model, or array, got: ' . get_debug_type($abstract),
+            sprintf(
+                'Unsupported data type for %s resolution. Expected FormRequest, Model, or array — got: %s.',
+                static::class,
+                get_debug_type($abstract),
+            ),
         );
     }
 
     /**
-     * Resolve unstructured data from array
+     * Resolve unstructured data from array.
      *
      * @template TKey of array-key
      * @template TValue
      *
      * @param  array<TKey, TValue>  $data
      *
-     * @throws MappingError
+     * @throws MappingException
      */
     public static function resolve(array $data): static
     {
         $data = static::applyTransforms($data);
 
-        /** @var static $instance */
-        $instance = static::mapper()
-            ->map(signature: static::class, source: static::resolveTheArrayKeyForm(data: $data));
+        try {
+            /** @var static $instance */
+            $instance = static::mapper()
+                ->map(signature: static::class, source: static::resolveTheArrayKeyForm(data: $data));
 
-        return $instance;
+            return $instance;
+        } catch (MappingError $e) {
+            throw MappingException::fromMappingError($e);
+        }
     }
 
     /**
@@ -120,23 +142,6 @@ trait HasResolvable
     }
 
     /**
-     * Resolve unstructured data from array
-     *
-     * @template TKey of array-key
-     * @template TValue
-     *
-     * @param  array<TKey, TValue>  $data
-     *
-     * @throws MappingError
-     *
-     * @deprecated can use resolve()
-     */
-    public static function resolveFromArray(array $data): static
-    {
-        return static::resolve($data);
-    }
-
-    /**
      * Resolve unstructured data from FormRequest
      *
      * @throws MappingError
@@ -165,11 +170,8 @@ trait HasResolvable
     /**
      * Resolve all array key form according the config
      *
-     * @template TArrayKey of array-key
-     * @template TArrayValue
-     *
-     * @param  array<TArrayKey, TArrayValue>  $data
-     * @return array<TArrayKey, mixed>
+     * @param  array<array-key, mixed>  $data
+     * @return array<string, mixed>
      */
     protected static function resolveTheArrayKeyForm(array $data): array
     {

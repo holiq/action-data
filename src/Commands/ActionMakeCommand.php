@@ -42,7 +42,7 @@ class ActionMakeCommand extends Command implements Console
             data: new NamespaceData(
                 structures: Source::resolveActionPath(),
                 nameArgument: $this->resolveNameArgument(),
-            )
+            ),
         );
     }
 
@@ -58,23 +58,23 @@ class ActionMakeCommand extends Command implements Console
         return new PlaceholderData(
             namespace: $this->getNamespace(),
             class: $this->getClassName(),
-            importClass: $this->resolveWithimportClass(),
+            importClass: $this->resolveWithImportClass(),
             classBasename: basename((string) $this->resolveWithDtoOption()),
         );
     }
 
-    public function resolveWithimportClass(): ?string
+    public function resolveWithImportClass(): ?string
     {
-        if ($this->resolveWithDtoOption()) {
-            $namespace = Source::resolveNamespace(
-                data: new NamespaceData(
-                    structures: Source::resolveDataTransferObjectPath(),
-                    nameArgument: (string) $this->resolveWithDtoOption(),
-                    endsWith: (string) $this->resolveWithDtoOption(),
-                )
-            );
+        if (! $this->resolveWithDtoOption()) {
+            return null;
         }
 
-        return $namespace ?? null;
+        return Source::resolveNamespace(
+            data: new NamespaceData(
+                structures: Source::resolveDataTransferObjectPath(),
+                nameArgument: (string) $this->resolveWithDtoOption(),
+                endsWith: (string) $this->resolveWithDtoOption(),
+            ),
+        );
     }
 }

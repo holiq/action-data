@@ -12,20 +12,18 @@ readonly class FilePresentAction extends Action
     /**
      * @throws FileAlreadyExistException
      */
-    public function execute(FilePresentData $data, bool $withForce = false): bool
+    public function execute(FilePresentData $data, bool $withForce = false): void
     {
         $filesystem = new Filesystem;
 
         $path = $data->namespacePath . '/' . $data->fileName;
 
         if ($withForce) {
-            return $filesystem->delete(paths: $path);
+            $filesystem->delete(paths: $path);
         }
 
         if ($filesystem->exists(path: $path)) {
             throw new FileAlreadyExistException($data->fileName);
         }
-
-        return false;
     }
 }

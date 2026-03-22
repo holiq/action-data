@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use Holiq\ActionData\Exceptions\InvalidArgumentException;
 use Holiq\ActionData\Foundation\DataTransferObject;
 
 // Test DTO class for unit testing
@@ -172,4 +173,4 @@ it('can convert to camelCase array', function () {
 
 it('throws exception for unsupported data type in resolveFrom', function () {
     TestUserData::resolveFrom(new \stdClass());
-})->throws(\Holiq\ActionData\Exceptions\InvalidArgumentException::class);
+})->throws(InvalidArgumentException::class);

@@ -6,6 +6,7 @@ use Holiq\ActionData\Attributes\Validation\Email;
 use Holiq\ActionData\Attributes\Validation\Length;
 use Holiq\ActionData\Attributes\Validation\Required;
 use Holiq\ActionData\Foundation\DataTransferObject;
+use Illuminate\Validation\ValidationException;
 
 // Test DTO with attributes
 readonly class AttributeTestUserData extends DataTransferObject
@@ -32,11 +33,30 @@ it('can validate DTO using attributes', function () {
     expect($result)->toBe($user);
 });
 
-it('throws exception when attribute validation fails', function () {
+it('throws ValidationException when attribute validation fails', function () {
     $user = new AttributeTestUserData('', 'invalid-email', 25);
 
-    $user->validateAttributes();
-})->throws(\InvalidArgumentException::class);
+    expect(fn () => $user->validateAttributes())
+        ->toThrow(ValidationException::class);
+});
+
+it('ValidationException carries structured per-field errors', function () {
+    $user = new AttributeTestUserData('', 'invalid-email', 25);
+
+    try {
+        $user->validateAttributes();
+        $this->fail('Expected ValidationException was not thrown');
+    } catch (ValidationException $e) {
+        $errors = $e->errors();
+        expect($errors)->toBeArray();
+        expect(array_keys($errors))->toContain('name', 'email');
+        expect($errors)->toHaveKey('name');
+        expect($errors)->toHaveKey('email');
+        expect($errors)->not->toHaveKey('age');
+        expect($errors['name'][0])->toBeString();
+        expect($e->getMessage())->toBeString();
+    }
+});
 
 it('can combine attribute and callback validation', function () {
     $user = new AttributeTestUserData('John Doe', 'john@example.com', 25); // Adult age
@@ -53,12 +73,12 @@ it('validates specific attribute rules', function () {
     $user = new AttributeTestUserData('J', 'john@example.com', 25); // Name too short
 
     expect(fn () => $user->validateAttributes())
-        ->toThrow(\InvalidArgumentException::class);
+        ->toThrow(ValidationException::class);
 });
 
 it('validates email format', function () {
     $user = new AttributeTestUserData('John Doe', 'not-an-email', 25);
 
     expect(fn () => $user->validateAttributes())
-        ->toThrow(\InvalidArgumentException::class);
+        ->toThrow(ValidationException::class);
 });
