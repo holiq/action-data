@@ -171,7 +171,7 @@ trait HasResolvable
      * Resolve all array key form according the config
      *
      * @param  array<array-key, mixed>  $data
-     * @return array<string, mixed>
+     * @return array<array-key, mixed>
      */
     protected static function resolveTheArrayKeyForm(array $data): array
     {
