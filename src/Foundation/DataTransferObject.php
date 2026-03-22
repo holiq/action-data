@@ -107,12 +107,13 @@ abstract readonly class DataTransferObject
         }
 
         if (is_array($value)) {
-            return array_map(
-                fn ($item) => $item instanceof DataTransferObject
-                    ? $item->toArray()
-                    : $item,
-                $value,
-            );
+            $resolved = [];
+
+            foreach ($value as $key => $item) {
+                $resolved[$key] = $this->resolveNestedValue($item);
+            }
+
+            return $resolved;
         }
 
         return $value;

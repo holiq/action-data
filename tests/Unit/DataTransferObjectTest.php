@@ -2,7 +2,9 @@
 
 namespace Tests\Unit;
 
+use CuyZ\Valinor\Mapper\MappingError;
 use Holiq\ActionData\Exceptions\InvalidArgumentException;
+use Holiq\ActionData\Exceptions\MappingException;
 use Holiq\ActionData\Foundation\DataTransferObject;
 
 // Test DTO class for unit testing
@@ -24,20 +26,6 @@ readonly class TestUserData extends DataTransferObject
     protected function toExcludedPropertiesOnUpdate(): array
     {
         return ['email'];
-    }
-}
-
-readonly class PersonDto extends DataTransferObject
-{
-    public function __construct(
-        public readonly string $firstName,
-        public readonly string $lastName,
-        public readonly int $age,
-        /** @var string[] */
-        public readonly array $hobbies,
-        /** @var array<string, string|int|float> */
-        public readonly array $address,
-    ) {
     }
 }
 
@@ -174,3 +162,16 @@ it('can convert to camelCase array', function () {
 it('throws exception for unsupported data type in resolveFrom', function () {
     TestUserData::resolveFrom(new \stdClass());
 })->throws(InvalidArgumentException::class);
+
+it('wraps valinor mapping errors into mapping exception', function () {
+    try {
+        TestUserData::resolve([
+            'first_name' => 'John',
+            // Missing required fields to trigger a mapping failure
+        ]);
+
+        test()->fail('Expected MappingException to be thrown.');
+    } catch (MappingException $exception) {
+        expect($exception->getPrevious())->toBeInstanceOf(MappingError::class);
+    }
+});

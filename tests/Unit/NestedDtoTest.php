@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 use Holiq\ActionData\Foundation\DataTransferObject;
 
 readonly class AddressDto extends DataTransferObject
@@ -147,4 +145,115 @@ it('handles missing nested data gracefully', function () {
     $user = UserDto::resolve($data);
 
     expect($user->previousAddresses)->toBeEmpty();
+});
+
+it('can convert manually constructed DTO to array', function () {
+    $user = new UserDto(
+        name: 'John Doe',
+        email: 'john@example.com',
+        address: new AddressDto(
+            street: '123 Main St',
+            city: 'Anytown',
+            country: 'USA',
+        ),
+        previousAddresses: [
+            new AddressDto(
+                street: '789 Pine St',
+                city: 'Oldtown',
+                country: 'USA',
+            ),
+        ]
+    );
+
+    expect($user->toArray())->toBe([
+        'name' => 'John Doe',
+        'email' => 'john@example.com',
+        'address' => [
+            'street' => '123 Main St',
+            'city' => 'Anytown',
+            'country' => 'USA',
+        ],
+        'previous_addresses' => [
+            [
+                'street' => '789 Pine St',
+                'city' => 'Oldtown',
+                'country' => 'USA',
+            ],
+        ],
+    ]);
+});
+
+it('can convert deeply nested manually constructed DTO to array', function () {
+    $company = new CompanyDto(
+        name: 'Acme Corp',
+        headquarters: new AddressDto(
+            street: '100 Business Blvd',
+            city: 'Corporate City',
+            country: 'USA',
+        ),
+        employees: [
+            new UserDto(
+                name: 'Alice Johnson',
+                email: 'alice@acme.com',
+                address: new AddressDto(
+                    street: '200 Residential Rd',
+                    city: 'Suburbia',
+                    country: 'USA',
+                ),
+                previousAddresses: [
+                    new AddressDto(
+                        street: '400 Old St',
+                        city: 'Oldtown',
+                        country: 'USA',
+                    ),
+                ],
+            ),
+            new UserDto(
+                name: 'Bob Wilson',
+                email: 'bob@acme.com',
+                address: new AddressDto(
+                    street: '300 Downtown Ave',
+                    city: 'Metro City',
+                    country: 'USA',
+                ),
+            ),
+        ]
+    );
+
+    expect($company->toArray())->toBe([
+        'name' => 'Acme Corp',
+        'headquarters' => [
+            'street' => '100 Business Blvd',
+            'city' => 'Corporate City',
+            'country' => 'USA',
+        ],
+        'employees' => [
+            [
+                'name' => 'Alice Johnson',
+                'email' => 'alice@acme.com',
+                'address' => [
+                    'street' => '200 Residential Rd',
+                    'city' => 'Suburbia',
+                    'country' => 'USA',
+                ],
+                'previous_addresses' => [
+                    [
+                        'street' => '400 Old St',
+                        'city' => 'Oldtown',
+                        'country' => 'USA',
+                    ],
+                ],
+            ],
+            [
+                'name' => 'Bob Wilson',
+                'email' => 'bob@acme.com',
+                'address' => [
+                    'street' => '300 Downtown Ave',
+                    'city' => 'Metro City',
+                    'country' => 'USA',
+                ],
+                'previous_addresses' => [],
+            ],
+        ],
+    ]);
 });
