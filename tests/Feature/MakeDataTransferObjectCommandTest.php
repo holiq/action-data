@@ -3,6 +3,7 @@
 namespace Tests\Feature\Commands;
 
 use Holiq\ActionData\Exceptions\FileAlreadyExistException;
+use Holiq\ActionData\Exceptions\InvalidArgumentException;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
@@ -32,6 +33,23 @@ it(description: 'can generate new Data Transfer Object class')
                     needles: ['{{ class }}', '{{ namespace }}']
                 )
             )->toBeFalse();
+    })
+    ->group('commands');
+
+it(description: 'normalizes generated class names')
+    ->defer(function () {
+        Artisan::call(command: 'make:dto user_profile/ProfileData');
+
+        expect(fileExists(relativeFileName: 'UserProfile/ProfileData.php', path: dataTransferObjectPath()))->toBeTrue();
+    })
+    ->group('commands');
+
+it(description: 'rejects path traversal in generated class names')
+    ->defer(function () {
+        expect(fn () => Artisan::call(command: 'make:dto ../EscapedData'))
+            ->toThrow(InvalidArgumentException::class);
+
+        expect(fileExists(relativeFileName: 'EscapedData.php', path: base_path()))->toBeFalse();
     })
     ->group('commands');
 

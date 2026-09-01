@@ -3,10 +3,55 @@
 namespace Holiq\ActionData\Support;
 
 use Holiq\ActionData\DataTransferObjects\NamespaceData;
+use Holiq\ActionData\Exceptions\InvalidArgumentException;
 use Illuminate\Support\Str;
 
 class Source
 {
+    /**
+     * Normalize and validate a relative class name used by a generator.
+     *
+     * Class names may contain forward-slash separated namespace segments, but
+     * must not escape the configured generation directory.
+     */
+    public static function normalizeClassName(string $name): string
+    {
+        if ($name === '' || str_starts_with($name, '/') || str_ends_with($name, '/') || str_contains($name, '\\')) {
+            throw new InvalidArgumentException(
+                sprintf(
+                    'Invalid class name "%s". Use a relative class name with optional "/" namespace separators.',
+                    $name,
+                ),
+            );
+        }
+
+        $segments = explode('/', $name);
+        $normalizedSegments = [];
+
+        foreach ($segments as $segment) {
+            if ($segment === '' || $segment === '.' || $segment === '..') {
+                throw new InvalidArgumentException(
+                    sprintf('Invalid class name "%s".', $name),
+                );
+            }
+
+            $normalizedSegment = Str::studly($segment);
+
+            if (! preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $normalizedSegment)) {
+                throw new InvalidArgumentException(
+                    sprintf(
+                        'Invalid class name "%s". Each segment must resolve to a valid PHP class name.',
+                        $name,
+                    ),
+                );
+            }
+
+            $normalizedSegments[] = $normalizedSegment;
+        }
+
+        return implode('/', $normalizedSegments);
+    }
+
     /**
      * Get the configured path for Actions
      */

@@ -56,6 +56,29 @@ it('can resolve nested DTOs', function () {
         ->and($user->address->country)->toBe('USA');
 });
 
+it('can resolve nested DTOs from snake_case keys', function () {
+    $user = UserDto::resolve([
+        'name' => 'Jane Smith',
+        'email' => 'jane@example.com',
+        'address' => [
+            'street' => '456 Oak Ave',
+            'city' => 'Springfield',
+            'country' => 'USA',
+        ],
+        'previous_addresses' => [
+            [
+                'street' => '789 Pine St',
+                'city' => 'Oldtown',
+                'country' => 'USA',
+            ],
+        ],
+    ]);
+
+    expect($user->previousAddresses)->toHaveCount(1)
+        ->and($user->previousAddresses[0])->toBeInstanceOf(AddressDto::class)
+        ->and($user->previousAddresses[0]->city)->toBe('Oldtown');
+});
+
 it('can resolve arrays of nested DTOs', function () {
     $data = [
         'name' => 'Jane Smith',

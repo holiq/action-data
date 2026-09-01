@@ -10,11 +10,17 @@ use Illuminate\Support\Str;
 beforeEach(closure: function () {
     (new Filesystem())
         ->deleteDirectory(directory: actionPath());
+
+    (new Filesystem())
+        ->deleteDirectory(directory: dataTransferObjectPath());
 });
 
 afterEach(closure: function () {
     (new Filesystem())
         ->deleteDirectory(directory: actionPath());
+
+    (new Filesystem())
+        ->deleteDirectory(directory: dataTransferObjectPath());
 });
 
 it(description: 'can generate new Action class')
@@ -32,6 +38,44 @@ it(description: 'can generate new Action class')
                     needles: ['{{ class }}', '{{ namespace }}']
                 )
             )->toBeFalse();
+    })
+    ->group('commands');
+
+it(description: 'can generate an Action and its DTO')
+    ->defer(function () {
+        Artisan::call(command: 'make:action User/StoreUserAction --with-dto=User/StoreUserData');
+
+        expect(fileExists(relativeFileName: 'User/StoreUserAction.php', path: actionPath()))->toBeTrue()
+            ->and(fileExists(relativeFileName: 'User/StoreUserData.php', path: dataTransferObjectPath()))->toBeTrue()
+            ->and(fileGet(relativeFileName: 'User/StoreUserAction.php', path: actionPath()))
+            ->toContain('use App\\DataTransferObjects\\User\\StoreUserData;')
+            ->and(fileGet(relativeFileName: 'User/StoreUserAction.php', path: actionPath()))
+            ->toContain('function execute(StoreUserData $data)');
+    })
+    ->group('commands');
+
+it(description: 'does not create an Action when its DTO already exists')
+    ->defer(function () {
+        Artisan::call(command: 'make:dto User/StoreUserData');
+
+        expect(fn () => Artisan::call(command: 'make:action User/StoreUserAction --with-dto=User/StoreUserData'))
+            ->toThrow(FileAlreadyExistException::class);
+
+        expect(fileExists(relativeFileName: 'User/StoreUserAction.php', path: actionPath()))->toBeFalse();
+    })
+    ->group('commands');
+
+it(description: 'uses configured paths for Action and DTO generation')
+    ->defer(function () {
+        config([
+            'action-data.action_path' => 'app/CustomActions',
+            'action-data.data_path' => 'app/CustomData',
+        ]);
+
+        Artisan::call(command: 'make:action Admin/CreateUserAction --with-dto=Admin/CreateUserData');
+
+        expect(fileExists(relativeFileName: 'Admin/CreateUserAction.php', path: actionPath()))->toBeTrue()
+            ->and(fileExists(relativeFileName: 'Admin/CreateUserData.php', path: dataTransferObjectPath()))->toBeTrue();
     })
     ->group('commands');
 

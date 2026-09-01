@@ -15,6 +15,10 @@ readonly class Email implements Validator
 
     public function validate(mixed $value, string $property): bool
     {
+        if ($value === null) {
+            return true;
+        }
+
         return is_string($value) && filter_var($value, FILTER_VALIDATE_EMAIL) !== false;
     }
 

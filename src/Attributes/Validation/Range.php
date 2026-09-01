@@ -17,6 +17,10 @@ readonly class Range implements Validator
 
     public function validate(mixed $value, string $property): bool
     {
+        if ($value === null) {
+            return true;
+        }
+
         if (! is_numeric($value)) {
             return false;
         }

@@ -16,6 +16,10 @@ readonly class Pattern implements Validator
 
     public function validate(mixed $value, string $property): bool
     {
+        if ($value === null) {
+            return true;
+        }
+
         if (! is_string($value)) {
             return false;
         }

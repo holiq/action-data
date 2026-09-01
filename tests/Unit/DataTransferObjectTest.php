@@ -6,6 +6,8 @@ use CuyZ\Valinor\Mapper\MappingError;
 use Holiq\ActionData\Exceptions\InvalidArgumentException;
 use Holiq\ActionData\Exceptions\MappingException;
 use Holiq\ActionData\Foundation\DataTransferObject;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Http\FormRequest;
 
 // Test DTO class for unit testing
 readonly class TestUserData extends DataTransferObject
@@ -29,6 +31,31 @@ readonly class TestUserData extends DataTransferObject
     }
 }
 
+class TestUserFormRequest extends FormRequest
+{
+    public function __construct(private array $payload)
+    {
+        parent::__construct();
+    }
+
+    public function validated($key = null, $default = null): array
+    {
+        return $this->payload;
+    }
+}
+
+class TestUserModel extends Model
+{
+    public function toArray(): array
+    {
+        return [
+            'first_name' => 'Jane',
+            'last_name' => 'Smith',
+            'email' => 'jane@example.com',
+        ];
+    }
+}
+
 it('can resolve DTO from array', function () {
     $data = TestUserData::resolve([
         'first_name' => 'John',
@@ -43,6 +70,30 @@ it('can resolve DTO from array', function () {
         ->and($data->email)->toBe('john@example.com')
         ->and($data->password)->toBe('secret123');
 });
+
+it('can resolve DTO from a FormRequest', function () {
+    $data = TestUserData::resolveFrom(new TestUserFormRequest([
+        'first_name' => 'Jane',
+        'last_name' => 'Smith',
+        'email' => 'jane@example.com',
+    ]));
+
+    expect($data->firstName)->toBe('Jane')
+        ->and($data->lastName)->toBe('Smith')
+        ->and($data->email)->toBe('jane@example.com');
+});
+
+it('can resolve DTO from an Eloquent model', function () {
+    $data = TestUserData::resolveFrom(new TestUserModel());
+
+    expect($data->firstName)->toBe('Jane')
+        ->and($data->lastName)->toBe('Smith')
+        ->and($data->email)->toBe('jane@example.com');
+});
+
+it('rejects null as a DTO source', function () {
+    TestUserData::resolveFrom(null);
+})->throws(InvalidArgumentException::class, 'Cannot resolve');
 
 it('converts DTO to array with snake_case keys', function () {
     $data = new TestUserData(

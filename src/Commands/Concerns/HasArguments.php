@@ -2,8 +2,8 @@
 
 namespace Holiq\ActionData\Commands\Concerns;
 
+use Holiq\ActionData\Support\Source;
 use Illuminate\Console\Command;
-use Illuminate\Support\Str;
 
 /**
  * @mixin Command
@@ -15,6 +15,6 @@ trait HasArguments
         /** @var string $argument */
         $argument = $this->argument(key: 'name');
 
-        return Str::ucfirst(string: $argument);
+        return Source::normalizeClassName($argument);
     }
 }

@@ -4,6 +4,8 @@ namespace Tests\Unit;
 
 use Holiq\ActionData\Attributes\Validation\Email;
 use Holiq\ActionData\Attributes\Validation\Length;
+use Holiq\ActionData\Attributes\Validation\Pattern;
+use Holiq\ActionData\Attributes\Validation\Range;
 use Holiq\ActionData\Attributes\Validation\Required;
 use Holiq\ActionData\Foundation\DataTransferObject;
 use Illuminate\Validation\ValidationException;
@@ -25,12 +27,48 @@ readonly class AttributeTestUserData extends DataTransferObject
     }
 }
 
+readonly class NullableAttributeTestData extends DataTransferObject
+{
+    public function __construct(
+        #[Email]
+        public ?string $email = null,
+
+        #[Length(min: 2, max: 50)]
+        public ?string $name = null,
+
+        #[Range(min: 1, max: 120)]
+        public int | float | null $age = null,
+
+        #[Pattern(regex: '/^[A-Z]+$/')]
+        public ?string $code = null,
+    ) {
+    }
+}
+
 it('can validate DTO using attributes', function () {
     $user = new AttributeTestUserData('John Doe', 'john@example.com', 25);
 
     // Should pass validation
     $result = $user->validateAttributes();
     expect($result)->toBe($user);
+});
+
+it('allows null for non-required validation attributes', function () {
+    $data = new NullableAttributeTestData();
+
+    expect($data->validateAttributes())->toBe($data);
+});
+
+it('still validates non-null values on nullable fields', function () {
+    $data = new NullableAttributeTestData(
+        email: 'invalid-email',
+        name: 'J',
+        age: 0,
+        code: 'lowercase',
+    );
+
+    expect(fn () => $data->validateAttributes())
+        ->toThrow(ValidationException::class);
 });
 
 it('throws ValidationException when attribute validation fails', function () {

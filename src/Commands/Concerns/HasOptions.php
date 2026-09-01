@@ -2,6 +2,7 @@
 
 namespace Holiq\ActionData\Commands\Concerns;
 
+use Holiq\ActionData\Support\Source;
 use Illuminate\Console\Command;
 
 /**
@@ -24,6 +25,10 @@ trait HasOptions
             exception: new \InvalidArgumentException(message: 'The --with-dto option must be a string.')
         );
 
-        return (string) $option;
+        if ($option === null) {
+            return '';
+        }
+
+        return Source::normalizeClassName((string) $option);
     }
 }

@@ -25,6 +25,20 @@ readonly class UserProfileDto extends DataTransferObject
     }
 }
 
+readonly class FailingTransformDto extends DataTransferObject
+{
+    public function __construct(public string $value)
+    {
+    }
+
+    protected static function transforms(): array
+    {
+        return [
+            'value' => fn () => throw new RuntimeException('Transformation failed.'),
+        ];
+    }
+}
+
 it('applies transformations during resolve', function () {
     $data = [
         'name' => '  JOHN DOE  ',
@@ -107,3 +121,7 @@ it('works with no transformations defined', function () {
 
     expect($dto->value)->toBe('test');
 });
+
+it('propagates transformation exceptions', function () {
+    FailingTransformDto::resolve(['value' => 'test']);
+})->throws(RuntimeException::class, 'Transformation failed.');
