@@ -2,6 +2,7 @@
 
 namespace Holiq\ActionData\Foundation;
 
+use Holiq\ActionData\Contracts\ContextualValidator;
 use Holiq\ActionData\Contracts\Validator;
 use Holiq\ActionData\Exceptions\InvalidArgumentException;
 use Holiq\ActionData\Foundation\DataTransferObject\HasResolvable;
@@ -78,14 +79,20 @@ abstract readonly class DataTransferObject
      */
     public function toArray(): array
     {
-        $excludedPropertyKeys = [
-            "\x00*\x00excludedPropertiesOnCreate",
-            "\x00*\x00excludedPropertiesOnUpdate",
-            "\x00*\x00resolveArrayKeyUsing",
-        ];
+        $values = [];
+        $reflection = new \ReflectionClass($this);
 
-        return Collection::wrap((array) $this)
-            ->except(keys: $excludedPropertyKeys)
+        foreach ($reflection->getProperties() as $property) {
+            if ($property->isStatic()
+                || $property->getDeclaringClass()->getName() === self::class
+                || ! $property->isInitialized($this)) {
+                continue;
+            }
+
+            $values[$property->getName()] = $property->getValue($this);
+        }
+
+        return Collection::wrap($values)
             ->mapWithKeys(
                 fn ($value, $key): array => [
                     $this->resolveArrayKey($key) => $this->resolveNestedValue($value),
@@ -418,6 +425,10 @@ abstract readonly class DataTransferObject
      * }
      * ```
      *
+     * Error keys and the `:property` placeholder use snake_case, matching
+     * Laravel's usual request input convention. For example, a `$firstName`
+     * property is reported as `first_name`.
+     *
      * @throws ValidationException
      */
     public function validateAttributes(): static
@@ -432,13 +443,20 @@ abstract readonly class DataTransferObject
             foreach ($property->getAttributes() as $attribute) {
                 $attributeInstance = $attribute->newInstance();
 
-                // Check if it's a validation attribute
-                if ($attributeInstance instanceof Validator) {
-                    if (! $attributeInstance->validate($value, $propertyName)) {
-                        $errors[$propertyName][] = $attributeInstance->getErrorMessage(
-                            $propertyName,
-                        );
-                    }
+                $isValid = match (true) {
+                    $attributeInstance instanceof ContextualValidator => $attributeInstance->validateWithContext($value, $propertyName, $this),
+                    $attributeInstance instanceof Validator => $attributeInstance->validate($value, $propertyName),
+                    default => true,
+                };
+
+                if (! $isValid
+                    && ($attributeInstance instanceof Validator
+                        || $attributeInstance instanceof ContextualValidator)) {
+                    $errorKey = $this->validationErrorKey($propertyName);
+
+                    $errors[$errorKey][] = $attributeInstance->getErrorMessage(
+                        $errorKey,
+                    );
                 }
             }
         }
@@ -448,6 +466,17 @@ abstract readonly class DataTransferObject
         }
 
         return $this;
+    }
+
+    /**
+     * Resolve the public key used for attribute validation errors.
+     *
+     * DTO properties are conventionally camelCase while Laravel request
+     * payloads and validation errors are conventionally snake_case.
+     */
+    protected function validationErrorKey(string $property): string
+    {
+        return Str::snake($property);
     }
 
     /**

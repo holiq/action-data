@@ -31,6 +31,18 @@ readonly class TestUserData extends DataTransferObject
     }
 }
 
+readonly class TestMetadataData extends DataTransferObject
+{
+    /**
+     * @param  array<string, string>  $metadata
+     */
+    public function __construct(
+        public string $name,
+        public array $metadata,
+    ) {
+    }
+}
+
 class TestUserFormRequest extends FormRequest
 {
     public function __construct(private array $payload)
@@ -94,6 +106,43 @@ it('can resolve DTO from an Eloquent model', function () {
 it('rejects null as a DTO source', function () {
     TestUserData::resolveFrom(null);
 })->throws(InvalidArgumentException::class, 'Cannot resolve');
+
+it('rejects unknown input fields in strict mode', function () {
+    TestUserData::resolve([
+        'first_name' => 'Jane',
+        'last_name' => 'Smith',
+        'email' => 'jane@example.com',
+        'unexpected_field' => 'unexpected',
+    ]);
+})->throws(MappingException::class);
+
+it('allows unknown input fields when strict mode is disabled', function () {
+    $data = TestUserData::resolve(
+        data: [
+            'first_name' => 'Jane',
+            'last_name' => 'Smith',
+            'email' => 'jane@example.com',
+            'unexpected_field' => 'unexpected',
+        ],
+        strict: false,
+    );
+
+    expect($data->firstName)->toBe('Jane');
+});
+
+it('preserves nested keys for configured opaque array properties', function () {
+    $data = TestMetadataData::resolve(
+        data: [
+            'name' => 'Example',
+            'metadata' => [
+                'external_key' => 'value',
+            ],
+        ],
+        preserveNestedKeys: ['metadata'],
+    );
+
+    expect($data->metadata)->toBe(['external_key' => 'value']);
+});
 
 it('converts DTO to array with snake_case keys', function () {
     $data = new TestUserData(
@@ -224,5 +273,6 @@ it('wraps valinor mapping errors into mapping exception', function () {
         test()->fail('Expected MappingException to be thrown.');
     } catch (MappingException $exception) {
         expect($exception->getPrevious())->toBeInstanceOf(MappingError::class);
+        expect($exception->errors())->not->toBeEmpty();
     }
 });

@@ -7,21 +7,31 @@ use CuyZ\Valinor\MapperBuilder;
 
 class MapperRegistry
 {
-    private static ?TreeMapper $mapperInstance = null;
+    private static ?TreeMapper $strictMapper = null;
+
+    private static ?TreeMapper $permissiveMapper = null;
 
     /**
-     * Get the TreeMapper instance
+     * Get a cached TreeMapper instance.
+     *
+     * Valinor is strict by default. The permissive mapper is opt-in and
+     * allows source arrays to contain keys that are not constructor fields.
      */
-    public static function getMapper(): TreeMapper
+    public static function getMapper(bool $strict = true): TreeMapper
     {
-        return self::$mapperInstance ??= (new MapperBuilder())->mapper();
+        if ($strict) {
+            return self::$strictMapper ??= (new MapperBuilder())->mapper();
+        }
+
+        return self::$permissiveMapper ??= (new MapperBuilder())
+            ->allowSuperfluousKeys()
+            ->mapper();
     }
 
-    /**
-     * Reset the TreeMapper instance
-     */
+    /** Reset all cached TreeMapper instances. */
     public static function resetMapper(): void
     {
-        self::$mapperInstance = null;
+        self::$strictMapper = null;
+        self::$permissiveMapper = null;
     }
 }

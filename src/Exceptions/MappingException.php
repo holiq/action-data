@@ -19,18 +19,38 @@ use Illuminate\Http\Response;
  *     $data = MyData::resolve($input);
  * } catch (MappingException $e) {
  *     // $e->getMessage()  — human-readable summary
+ *     // $e->errors()      — messages grouped by source path
  *     // $e->getPrevious() — original MappingError for deeper inspection
  * }
  * ```
  */
 class MappingException extends \RuntimeException
 {
+    /** @var array<string, list<string>> */
+    private array $errors;
+
+    /**
+     * @param  array<string, list<string>>  $errors
+     */
     public function __construct(
         string $message,
         int $code = Response::HTTP_UNPROCESSABLE_ENTITY,
         ?\Throwable $previous = null,
+        array $errors = [],
     ) {
         parent::__construct($message, $code, $previous);
+
+        $this->errors = $errors;
+    }
+
+    /**
+     * Return mapping messages grouped by their Valinor source path.
+     *
+     * @return array<string, list<string>>
+     */
+    public function errors(): array
+    {
+        return $this->errors;
     }
 
     /**
@@ -42,9 +62,14 @@ class MappingException extends \RuntimeException
     public static function fromMappingError(MappingError $error): self
     {
         $messages = [];
+        $errors = [];
 
         foreach ($error->messages() as $message) {
-            $messages[] = (string) $message;
+            $messageText = (string) $message;
+            $messages[] = $messageText;
+
+            $path = $message->path() ?: $message->name() ?: 'root';
+            $errors[$path][] = $messageText;
         }
 
         $summary = ! empty($messages)
@@ -54,6 +79,7 @@ class MappingException extends \RuntimeException
         return new self(
             message: 'Resolution failed: ' . $summary,
             previous: $error,
+            errors: $errors,
         );
     }
 }

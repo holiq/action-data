@@ -40,38 +40,26 @@ readonly class Length implements Validator
 
     public function getErrorMessage(string $property): string
     {
-        $message = $this->message;
+        $message = $this->message !== 'The :property field length is invalid.'
+            ? $this->message
+            : null;
 
-        if ($this->min !== null && $this->max !== null) {
+        if ($message === null && $this->min !== null && $this->max !== null) {
             $message = 'The :property field must be between :min and :max characters.';
-
-            return str_replace(
-                [':property', ':min', ':max'],
-                [$property, (string) $this->min, (string) $this->max],
-                $message
-            );
         }
 
-        if ($this->min !== null) {
+        if ($message === null && $this->min !== null) {
             $message = 'The :property field must be at least :min characters.';
-
-            return str_replace(
-                [':property', ':min'],
-                [$property, (string) $this->min],
-                $message
-            );
         }
 
-        if ($this->max !== null) {
+        if ($message === null && $this->max !== null) {
             $message = 'The :property field must not exceed :max characters.';
-
-            return str_replace(
-                [':property', ':max'],
-                [$property, (string) $this->max],
-                $message
-            );
         }
 
-        return str_replace(':property', $property, $this->message);
+        return str_replace(
+            [':property', ':min', ':max'],
+            [$property, (string) $this->min, (string) $this->max],
+            $message ?? 'The :property field length is invalid.',
+        );
     }
 }

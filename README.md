@@ -31,6 +31,7 @@ A Laravel package that provides an elegant way to generate and use Actions and D
 - 🔒 **Type Safety**: Built with PHP 8.3+ readonly classes for immutable data structures
 - 🏗️ **Clean Architecture**: Promotes separation of concerns and clean code practices
 - 🔄 **Automatic Data Mapping**: Seamless conversion between arrays, Form Requests, and Models
+- 🎯 **Explicit Mapping Modes**: Strict input mapping by default with opt-in permissive mapping
 - ✅ **Attribute-Based Validation**: Use PHP attributes for declarative validation rules
 - 🔧 **Custom Validation**: Support for custom validation callbacks and pipelines
 - 🌳 **Nested DTOs**: Automatic resolution of nested DTOs and arrays of DTOs
@@ -238,6 +239,30 @@ $userData = CreateUserData::resolveFrom($request);
 $userData = CreateUserData::resolveFrom($user);
 ```
 
+#### Strict Mapping and Nested Array Keys
+
+DTO resolution is strict by default: unknown input keys cause a `MappingException`.
+Use `strict: false` when extra source keys should be ignored:
+
+```php
+$userData = CreateUserData::resolve(
+    data: $request->validated(),
+    strict: false,
+);
+```
+
+Nested array keys are normalized to camelCase by default. For top-level DTO properties
+that contain opaque data such as metadata, preserve their child keys explicitly:
+
+```php
+$data = ExampleData::resolve(
+    data: [
+        'metadata' => ['external_key' => 'value'],
+    ],
+    preserveNestedKeys: ['metadata'],
+);
+```
+
 #### Array Conversion
 
 Convert DTOs to arrays with different formatting options:
@@ -305,7 +330,7 @@ Laravel Action Data provides powerful validation through PHP attributes and cust
 Use PHP attributes for declarative validation rules:
 
 ```php
-use Holiq\ActionData\Attributes\Validation\{Required, Email, Length, Range, Pattern};
+use Holiq\ActionData\Attributes\Validation\{Required, Email, Length, Range, Pattern, Url, In, Date, Uuid, Boolean, Confirmed};
 use Holiq\ActionData\Foundation\DataTransferObject;
 
 readonly class CreateUserData extends DataTransferObject
@@ -330,6 +355,8 @@ $user = CreateUserData::resolve($data)->validateAttributes();
 
 // If invalid, validateAttributes() throws Illuminate\Validation\ValidationException
 // with Laravel-standard per-field errors.
+// DTO properties are camelCase internally, but error keys and the :property
+// placeholder use snake_case (for example, $firstName becomes first_name).
 ```
 
 **Available validation attributes:**
@@ -339,6 +366,15 @@ $user = CreateUserData::resolve($data)->validateAttributes();
 - `#[Length(min: int, max: int)]` - Validates string length
 - `#[Range(min: int|float, max: int|float)]` - Validates numeric ranges
 - `#[Pattern(regex: string)]` - Validates against regular expression
+- `#[Url]` - Validates URL format
+- `#[In(values: [...])]` - Validates that a value belongs to a strict allow-list
+- `#[Date(format: 'Y-m-d')]` - Validates date values, optionally using a format
+- `#[Uuid]` - Validates canonical UUID format
+- `#[Boolean]` - Validates boolean values and Laravel-style boolean inputs
+- `#[Confirmed]` - Compares a property with its `*Confirmation` property
+
+All validation attributes except `Required` treat `null` as valid, so they can be
+used on nullable optional properties.
 
 #### Custom Validation Callbacks
 
@@ -382,6 +418,10 @@ class Positive implements Validator
     }
 }
 ```
+
+The `$property` argument received by `getErrorMessage()` is the public
+snake_case error key. The `validate()` method still receives the DTO property
+name, which remains camelCase internally.
 
 ### Nested DTOs
 
@@ -796,11 +836,16 @@ Resolves an Action instance from Laravel's container with optional parameters.
 
 #### Core Methods
 
-**`resolve(array $data): static`**  
+**`resolve(array $data, bool $strict = true, array $preserveNestedKeys = []): static`**
 Creates a DTO instance from an array with automatic key transformation and data transformations.
+Strict mode rejects unknown keys. `preserveNestedKeys` keeps child keys unchanged for
+the listed top-level array properties.
 
-**`resolveFrom(FormRequest|Model|array $abstract): static`**  
+**`resolveFrom(FormRequest|Model|array $abstract, bool $strict = true, array $preserveNestedKeys = []): static`**
 Creates a DTO instance from various data sources.
+
+**`MappingException::errors(): array`**
+Returns mapping messages grouped by their Valinor source path.
 
 #### Array Conversion
 

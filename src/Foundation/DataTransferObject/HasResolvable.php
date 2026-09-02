@@ -13,19 +13,20 @@ use Illuminate\Support\Str;
 trait HasResolvable
 {
     /**
-     * Resolve unstructured data from polymorphism types.
+     * Resolve unstructured data from a FormRequest, Model, or array.
      *
-     * Accepts a {@see FormRequest}, an Eloquent {@see Model}, or an `array`.
-     * Passing `null` or any other type will throw an {@see InvalidArgumentException}
-     * with a clear, descriptive message.
-     *
-     * @param  mixed  $abstract  The data source (FormRequest, Model, or array)
+     * @param  mixed  $abstract  The data source
+     * @param  list<string>  $preserveNestedKeys  Top-level array properties
+     *                                            whose child keys must remain unchanged
      *
      * @throws MappingException
      * @throws InvalidArgumentException
      */
-    public static function resolveFrom(mixed $abstract): static
-    {
+    public static function resolveFrom(
+        mixed $abstract,
+        bool $strict = true,
+        array $preserveNestedKeys = [],
+    ): static {
         if ($abstract === null) {
             throw new InvalidArgumentException(
                 sprintf(
@@ -36,18 +37,30 @@ trait HasResolvable
         }
 
         if ($abstract instanceof FormRequest) {
-            return static::resolveFromFormRequest(request: $abstract);
+            return static::resolveFromFormRequest(
+                request: $abstract,
+                strict: $strict,
+                preserveNestedKeys: $preserveNestedKeys,
+            );
         }
 
         if ($abstract instanceof Model) {
-            return static::resolveFromModel(model: $abstract);
+            return static::resolveFromModel(
+                model: $abstract,
+                strict: $strict,
+                preserveNestedKeys: $preserveNestedKeys,
+            );
         }
 
         if (is_array($abstract)) {
             /** @var array<array-key, mixed> $arrayData */
             $arrayData = $abstract;
 
-            return static::resolve(data: $arrayData);
+            return static::resolve(
+                data: $arrayData,
+                strict: $strict,
+                preserveNestedKeys: $preserveNestedKeys,
+            );
         }
 
         throw new InvalidArgumentException(
@@ -60,23 +73,34 @@ trait HasResolvable
     }
 
     /**
-     * Resolve unstructured data from array.
+     * Resolve unstructured data from an array.
      *
      * @template TKey of array-key
      * @template TValue
      *
      * @param  array<TKey, TValue>  $data
+     * @param  list<string>  $preserveNestedKeys  Top-level array properties
+     *                                            whose child keys must remain unchanged
      *
      * @throws MappingException
      */
-    public static function resolve(array $data): static
-    {
+    public static function resolve(
+        array $data,
+        bool $strict = true,
+        array $preserveNestedKeys = [],
+    ): static {
         $data = static::applyTransforms($data);
 
         try {
             /** @var static $instance */
-            $instance = static::mapper()
-                ->map(signature: static::class, source: static::resolveTheArrayKeyForm(data: $data));
+            $instance = static::mapperFor(strict: $strict)
+                ->map(
+                    signature: static::class,
+                    source: static::resolveTheArrayKeyForm(
+                        data: $data,
+                        preserveNestedKeys: $preserveNestedKeys,
+                    ),
+                );
 
             return $instance;
         } catch (MappingError $e) {
@@ -90,6 +114,19 @@ trait HasResolvable
     protected static function mapper(): TreeMapper
     {
         return MapperRegistry::getMapper();
+    }
+
+    /**
+     * Resolve the mapper for the requested input strictness.
+     *
+     * Keeping the original mapper() signature preserves custom mapper
+     * overrides while allowing permissive mapping as an explicit opt-in.
+     */
+    protected static function mapperFor(bool $strict): TreeMapper
+    {
+        return $strict
+            ? static::mapper()
+            : MapperRegistry::getMapper(strict: false);
     }
 
     /**
@@ -142,53 +179,90 @@ trait HasResolvable
     }
 
     /**
-     * Resolve unstructured data from FormRequest
+     * Resolve unstructured data from a FormRequest.
      *
-     * @throws MappingError
+     * @param  list<string>  $preserveNestedKeys
+     *
+     * @throws MappingException
      */
-    public static function resolveFromFormRequest(FormRequest $request): static
-    {
+    public static function resolveFromFormRequest(
+        FormRequest $request,
+        bool $strict = true,
+        array $preserveNestedKeys = [],
+    ): static {
         /** @var array<array-key, mixed> $validatedData */
         $validatedData = $request->validated();
 
-        return static::resolve($validatedData);
+        return static::resolve(
+            data: $validatedData,
+            strict: $strict,
+            preserveNestedKeys: $preserveNestedKeys,
+        );
     }
 
     /**
-     * Resolve unstructured data from Model
+     * Resolve unstructured data from a Model.
      *
-     * @throws MappingError
+     * @param  list<string>  $preserveNestedKeys
+     *
+     * @throws MappingException
      */
-    public static function resolveFromModel(Model $model): static
-    {
+    public static function resolveFromModel(
+        Model $model,
+        bool $strict = true,
+        array $preserveNestedKeys = [],
+    ): static {
         /** @var array<array-key, mixed> $modelData */
         $modelData = $model->toArray();
 
-        return static::resolve($modelData);
+        return static::resolve(
+            data: $modelData,
+            strict: $strict,
+            preserveNestedKeys: $preserveNestedKeys,
+        );
     }
 
     /**
      * Resolve all array key form according the config
      *
      * @param  array<array-key, mixed>  $data
+     * @param  list<string>  $preserveNestedKeys  Top-level array properties
+     *                                            whose child keys must remain unchanged
      * @return array<array-key, mixed>
      */
-    protected static function resolveTheArrayKeyForm(array $data): array
-    {
+    protected static function resolveTheArrayKeyForm(
+        array $data,
+        array $preserveNestedKeys = [],
+        bool $isRoot = true,
+    ): array {
+        $preserveNestedKeys = array_map(
+            static fn (string $key): string => Str::camel($key),
+            $preserveNestedKeys,
+        );
         $array = [];
 
         foreach ($data as $key => $value) {
-            $key = static::resolveArrayKeyOfInput(key: $key);
+            $resolvedKey = is_string($key)
+                ? static::resolveArrayKeyOfInput(key: $key)
+                : $key;
 
             if (is_array(value: $value)) {
-                $valueContainsArray = $value;
+                $preserveChildren = $isRoot
+                    && is_string($resolvedKey)
+                    && in_array($resolvedKey, $preserveNestedKeys, true);
 
-                $array[$key] = static::resolveTheArrayKeyForm(data: $valueContainsArray);
+                $array[$resolvedKey] = $preserveChildren
+                    ? $value
+                    : static::resolveTheArrayKeyForm(
+                        data: $value,
+                        preserveNestedKeys: $preserveNestedKeys,
+                        isRoot: false,
+                    );
 
                 continue;
             }
 
-            $array[$key] = $value;
+            $array[$resolvedKey] = $value;
         }
 
         return $array;

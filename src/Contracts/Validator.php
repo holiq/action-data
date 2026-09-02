@@ -61,7 +61,7 @@ interface Validator
     /**
      * Get the human-readable error message when validation fails.
      *
-     * @param  string  $property  The property name (camelCase)
+     * @param  string  $property  The public error key (snake_case)
      */
     public function getErrorMessage(string $property): string;
 }
